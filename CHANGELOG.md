@@ -1,3 +1,5 @@
+# [1.1.0](https://github.com/korason7117/komga/compare/1.0.0...1.1.0) (2026-08-16)
+
 # [1.26.3](https://github.com/gotson/komga/compare/1.26.2...1.26.3) (2026-08-12)
 ## 🛠  Build
 **release**

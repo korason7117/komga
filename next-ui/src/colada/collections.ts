@@ -45,12 +45,13 @@ export const collectionsListQuery = defineQueryOptions(
 )
 
 export const collectionsListQueryInfinite = defineInfiniteQueryOptions(
-  ({ libraryIds }: { libraryIds?: string[] }) => ({
-    key: QUERY_KEYS_COLLECTIONS.bySearch({ libraryIds, infinite: true }),
+  ({ search, libraryIds }: { search?: string; libraryIds?: string[] }) => ({
+    key: QUERY_KEYS_COLLECTIONS.bySearch({ search, libraryIds, infinite: true }),
     initialPageParam: new PageRequest(0, 50),
     query: ({ pageParam }) =>
       komgaGetCollections({
         query: {
+          search: search,
           library_id: libraryIds,
           page: pageParam.page,
           size: pageParam.size,

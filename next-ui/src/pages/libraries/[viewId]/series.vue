@@ -64,6 +64,17 @@
         tile
       >
         <FilterExpansionPanel
+          :title="$formatMessage(commonMessages.filterPanelCollection)"
+          :count="filters.collection.count"
+          @clear="filters.collection.clear()"
+        >
+          <FilterByCollection
+            v-model="filters.collection.filter.v"
+            v-model:mode="filters.collection.filter.m"
+          />
+        </FilterExpansionPanel>
+
+        <FilterExpansionPanel
           :title="$formatMessage(commonMessages.filterPanelSeriesStatus)"
           :count="filters.seriesStatus.count"
           @clear="filters.seriesStatus.clear()"
@@ -293,6 +304,7 @@ const {
   clearAll: filtersClearAll,
   countAll: filtersCountAll,
 } = useFilters([
+  'collection',
   'seriesStatus',
   'read',
   'genre',
@@ -316,6 +328,7 @@ const sortOptions = sortSeries.map((it) => convertSortOptionDescriptor(it))
 const conds = computed(() => ({
   allOf: [
     valuesToConditions(libraryIds.value, 'libraryId'),
+    schemaFilterStringToConditions(filters.value.collection.filter, 'collectionId', false),
     schemaFilterIncludeExcludeToConditions(filters.value.complete.filter, 'complete'),
     schemaFilterIncludeExcludeToConditions(filters.value.unavailable.filter, 'deleted'),
     schemaFilterIncludeExcludeToConditions(filters.value.oneshot.filter, 'oneShot'),

@@ -1907,6 +1907,10 @@
     "defaultMessage": "Read list created",
     "description": "Create read list notification: read list created"
   },
+  "eyR9uF": {
+    "defaultMessage": "Collection",
+    "description": "Filter panel: Collection"
+  },
   "eyYZUe": {
     "defaultMessage": "Libraries",
     "description": "Drawer menu for Libraries"

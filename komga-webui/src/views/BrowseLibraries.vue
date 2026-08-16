@@ -171,6 +171,7 @@ import {
   SearchConditionAnyOfBook,
   SearchConditionAnyOfSeries,
   SearchConditionAuthor,
+  SearchConditionCollectionId,
   SearchConditionComplete,
   SearchConditionDeleted,
   SearchConditionGenre,
@@ -248,6 +249,7 @@ export default Vue.extend({
       pageSizeUnwatch: null as any,
       drawer: false,
       filterOptions: {
+        collection: [] as NameValue[],
         genre: [] as NameValue[],
         tag: [] as NameValue[],
         publisher: [] as NameValue[],
@@ -435,6 +437,11 @@ export default Vue.extend({
             nValue: new SearchConditionSeriesStatus(new SearchOperatorIsNot(x)),
           } as NameValue)),
         },
+        collection: {
+          name: this.$t('filter.collection').toString(),
+          values: this.filterOptions.collection,
+          anyAllSelector: true,
+        },
         genre: {
           name: this.$t('filter.genre').toString(),
           values: [
@@ -579,7 +586,8 @@ export default Vue.extend({
       const requestLibraryIds = libraryId !== LIBRARIES_ALL ? [libraryId] : this.$store.getters.getLibrariesPinned.map((it: LibraryDto) => it.id)
 
       // load dynamic filters
-      const [genres, tags, publishers, languages, ageRatings, releaseDates, sharingLabels] = await Promise.all([
+      const [collections, genres, tags, publishers, languages, ageRatings, releaseDates, sharingLabels] = await Promise.all([
+        this.$komgaCollections.getCollections(requestLibraryIds, {unpaged: true} as PageRequest),
         this.$komgaReferential.getGenres(requestLibraryIds),
         this.$komgaReferential.getSeriesAndBookTags(requestLibraryIds),
         this.$komgaReferential.getPublishers(requestLibraryIds),
@@ -588,6 +596,11 @@ export default Vue.extend({
         this.$komgaReferential.getSeriesReleaseDates(requestLibraryIds),
         this.$komgaReferential.getSharingLabels(requestLibraryIds),
       ])
+      this.$set(this.filterOptions, 'collection', collections.content.map(x => ({
+        name: x.name,
+        value: new SearchConditionCollectionId(new SearchOperatorIs(x.id)),
+        nValue: new SearchConditionCollectionId(new SearchOperatorIsNot(x.id)),
+      } as NameValue)))
       this.$set(this.filterOptions, 'genre', toNameValueCondition(genres, x => new SearchConditionGenre(new SearchOperatorIs(x)), x => new SearchConditionGenre(new SearchOperatorIsNot(x))))
       this.$set(this.filterOptions, 'tag', toNameValueCondition(tags, x => new SearchConditionTag(new SearchOperatorIs(x)), x => new SearchConditionTag(new SearchOperatorIsNot(x))))
       this.$set(this.filterOptions, 'publisher', toNameValueCondition(publishers, x => new SearchConditionPublisher(new SearchOperatorIs(x)), x => new SearchConditionPublisher(new SearchOperatorIsNot(x))))
@@ -620,8 +633,9 @@ export default Vue.extend({
 
       // get filter from query params or local storage and validate with available filter values
       let activeFilters: any
-      if (route.query.status || route.query.readStatus || route.query.genre || route.query.tag || route.query.language || route.query.ageRating || route.query.publisher || authorRoles.some(role => role in route.query) || route.query.complete || route.query.oneshot || route.query.sharingLabel || route.query.deleted) {
+      if (route.query.status || route.query.readStatus || route.query.genre || route.query.tag || route.query.language || route.query.ageRating || route.query.publisher || authorRoles.some(role => role in route.query) || route.query.complete || route.query.oneshot || route.query.sharingLabel || route.query.deleted || route.query.collection) {
         activeFilters = {
+          collection: route.query.collection || [],
           status: route.query.status || [],
           readStatus: route.query.readStatus || [],
           genre: route.query.genre || [],
@@ -661,6 +675,7 @@ export default Vue.extend({
     },
     validateFilters(filters: FiltersActive): FiltersActive {
       const validFilter = {
+        collection: this.$_.intersectionWith(filters.collection, extractFilterOptionsValues(this.filterOptions.collection), objIsEqual) || [],
         status: this.$_.intersectionWith(filters.status, extractFilterOptionsValues(this.filterOptionsPanel.status.values), objIsEqual) || [],
         readStatus: this.$_.intersectionWith(filters.readStatus, extractFilterOptionsValues(this.filterOptionsList.readStatus.values), objIsEqual) || [],
         genre: this.$_.intersectionWith(filters.genre, extractFilterOptionsValues(this.filterOptions.genre), objIsEqual) || [],
@@ -783,6 +798,7 @@ export default Vue.extend({
         ))
       }
       if (this.filters.status && this.filters.status.length > 0) this.filtersMode?.status?.allOf ? conditions.push(new SearchConditionAllOfSeries(this.filters.status)) : conditions.push(new SearchConditionAnyOfSeries(this.filters.status))
+      if (this.filters.collection && this.filters.collection.length > 0) this.filtersMode?.collection?.allOf ? conditions.push(new SearchConditionAllOfSeries(this.filters.collection)) : conditions.push(new SearchConditionAnyOfSeries(this.filters.collection))
       if (this.filters.readStatus && this.filters.readStatus.length > 0) conditions.push(new SearchConditionAnyOfSeries(this.filters.readStatus))
       if (this.filters.genre && this.filters.genre.length > 0) this.filtersMode?.genre?.allOf ? conditions.push(new SearchConditionAllOfSeries(this.filters.genre)) : conditions.push(new SearchConditionAnyOfSeries(this.filters.genre))
       if (this.filters.tag && this.filters.tag.length > 0) this.filtersMode?.tag?.allOf ? conditions.push(new SearchConditionAllOfSeries(this.filters.tag)) : conditions.push(new SearchConditionAnyOfSeries(this.filters.tag))

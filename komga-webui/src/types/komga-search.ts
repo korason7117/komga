@@ -54,6 +54,14 @@ export class SearchConditionLibraryId implements SearchConditionBook, SearchCond
   }
 }
 
+export class SearchConditionCollectionId implements SearchConditionSeries {
+  collectionId: SearchOperatorEquality
+
+  constructor(op: SearchOperatorEquality) {
+    this.collectionId = op
+  }
+}
+
 export class SearchConditionSeriesId implements SearchConditionBook {
   seriesId: SearchOperatorEquality
 

@@ -1,3 +1,5 @@
+# [1.4.0](https://github.com/korason7117/komga/compare/1.3.0...1.4.0) (2026-08-16)
+
 # [1.3.0](https://github.com/korason7117/komga/compare/1.2.0...1.3.0) (2026-08-16)
 
 # [1.2.0](https://github.com/korason7117/komga/compare/1.1.0...1.2.0) (2026-08-16)

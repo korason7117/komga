@@ -68,7 +68,6 @@ jreleaser {
 
   release {
     github {
-      discussionCategoryName = "Announcements"
       skipTag = true
       tagName = "{{projectVersion}}"
 

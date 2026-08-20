@@ -9,7 +9,7 @@ import org.gotson.komga.domain.persistence.ReferentialRepository
 import org.gotson.komga.infrastructure.jooq.ContentRestrictionsSearchHelper
 import org.gotson.komga.infrastructure.jooq.RequiredJoin
 import org.gotson.komga.infrastructure.jooq.SplitDslDaoBase
-import org.gotson.komga.infrastructure.jooq.bookFolderField
+import org.gotson.komga.infrastructure.jooq.seriesFolderField
 import org.gotson.komga.infrastructure.jooq.buildPage
 import org.gotson.komga.infrastructure.jooq.udfStripAccents
 import org.gotson.komga.infrastructure.jooq.unicode3
@@ -234,14 +234,14 @@ class ReferentialDao(
   }
 
   override fun findAllFolders(filterOnLibraryIds: Collection<String>?): Set<String> {
-    val folder = bookFolderField(b.URL, l.ROOT)
+    val folder = seriesFolderField(s.URL, l.ROOT)
     return dslRO
       .selectDistinct(folder)
-      .from(b)
+      .from(s)
       .join(l)
-      .on(b.LIBRARY_ID.eq(l.ID))
+      .on(s.LIBRARY_ID.eq(l.ID))
       .where(folder.isNotNull)
-      .apply { filterOnLibraryIds?.let { and(b.LIBRARY_ID.`in`(it)) } }
+      .apply { filterOnLibraryIds?.let { and(s.LIBRARY_ID.`in`(it)) } }
       .orderBy(folder.unicode3())
       .fetchSet(folder)
   }
@@ -250,15 +250,15 @@ class ReferentialDao(
     libraryIds: Set<String>,
     filterOnLibraryIds: Collection<String>?,
   ): Set<String> {
-    val folder = bookFolderField(b.URL, l.ROOT)
+    val folder = seriesFolderField(s.URL, l.ROOT)
     return dslRO
       .selectDistinct(folder)
-      .from(b)
+      .from(s)
       .join(l)
-      .on(b.LIBRARY_ID.eq(l.ID))
-      .where(b.LIBRARY_ID.`in`(libraryIds))
+      .on(s.LIBRARY_ID.eq(l.ID))
+      .where(s.LIBRARY_ID.`in`(libraryIds))
       .and(folder.isNotNull)
-      .apply { filterOnLibraryIds?.let { and(b.LIBRARY_ID.`in`(it)) } }
+      .apply { filterOnLibraryIds?.let { and(s.LIBRARY_ID.`in`(it)) } }
       .orderBy(folder.unicode3())
       .fetchSet(folder)
   }

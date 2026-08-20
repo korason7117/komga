@@ -70,7 +70,7 @@ class ReferentialV1Controller(
   @GetMapping("folders")
   @Operation(
     summary = "List folders",
-    description = "List the top-level folder name of each series' books, relative to their library's root folder. This is derived from existing data, no additional metadata is stored.",
+    description = "List the top-level folder name of each series, relative to their library's root folder. This is derived from existing data, no additional metadata is stored.",
   )
   fun getFolders(
     @AuthenticationPrincipal principal: KomgaPrincipal,

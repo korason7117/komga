@@ -818,7 +818,7 @@ class SeriesSearchTest(
     val manhwaLibrary = makeLibrary("ManHwa", path = "file:/Library/ManHwa/")
     libraryRepository.insert(manhwaLibrary)
 
-    makeSeries("One Piece", suwayomiLibrary.id).let { series ->
+    makeSeries("One Piece", suwayomiLibrary.id, url = URL("file:/Library/Suwayomi/MangaDex/One%20piece/")).let { series ->
       seriesLifecycle.createSeries(series)
       val book =
         makeBook(
@@ -829,7 +829,7 @@ class SeriesSearchTest(
         )
       seriesLifecycle.addBooks(series, listOf(book))
     }
-    makeSeries("Some Comic", suwayomiLibrary.id).let { series ->
+    makeSeries("Some Comic", suwayomiLibrary.id, url = URL("file:/Library/Suwayomi/TCB%20Scans/Some%20Comic/")).let { series ->
       seriesLifecycle.createSeries(series)
       val book =
         makeBook(
@@ -840,7 +840,7 @@ class SeriesSearchTest(
         )
       seriesLifecycle.addBooks(series, listOf(book))
     }
-    makeSeries("Loose Oneshot", suwayomiLibrary.id).let { series ->
+    makeSeries("Loose Oneshot", suwayomiLibrary.id, url = URL("file:/Library/Suwayomi/Loose%20Oneshot.cbz")).let { series ->
       seriesLifecycle.createSeries(series)
       // loose book sitting directly at library root (0 folder levels) -> folder is null
       val book =
@@ -852,7 +852,7 @@ class SeriesSearchTest(
         )
       seriesLifecycle.addBooks(series, listOf(book))
     }
-    makeSeries("Superhuman Era", manhwaLibrary.id).let { series ->
+    makeSeries("Superhuman Era", manhwaLibrary.id, url = URL("file:/Library/ManHwa/Superhuman%20Era/")).let { series ->
       seriesLifecycle.createSeries(series)
       // standard 1 folder level deep (<Series>/<Book>) -> folder is null
       val book =

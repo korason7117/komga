@@ -7,7 +7,7 @@
       "url": "https://github.com/gotson/komga/blob/master/LICENSE"
     },
     "title": "Komga API",
-    "version": "1.5.0"
+    "version": "1.6.0"
   },
   "externalDocs": {
     "description": "Komga documentation",
@@ -3564,6 +3564,56 @@
         "summary": "Directory listing",
         "tags": [
           "File system"
+        ]
+      }
+    },
+    "/api/v1/folders": {
+      "get": {
+        "description": "List the top-level folder name of each series\u0027 books, relative to their library\u0027s root folder. This is derived from existing data, no additional metadata is stored.",
+        "operationId": "getFolders",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "library_id",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "uniqueItems": true
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          }
+        },
+        "summary": "List folders",
+        "tags": [
+          "Referential metadata"
         ]
       }
     },
@@ -12453,6 +12503,16 @@
           "deleted"
         ]
       },
+      "SearchConditionFolder": {
+        "properties": {
+          "folder": {
+            "$ref": "#/components/schemas/SearchOperatorEqualityNullableString"
+          }
+        },
+        "required": [
+          "folder"
+        ]
+      },
       "SearchConditionGenre": {
         "properties": {
           "genre": {
@@ -12619,6 +12679,9 @@
           },
           {
             "$ref": "#/components/schemas/SearchConditionGenre"
+          },
+          {
+            "$ref": "#/components/schemas/SearchConditionFolder"
           },
           {
             "$ref": "#/components/schemas/SearchConditionAgeRating"

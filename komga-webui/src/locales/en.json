@@ -840,6 +840,7 @@
     "any": "Any",
     "collection": "collection",
     "complete": "Complete",
+    "folder": "folder",
     "genre": "genre",
     "in_progress": "In Progress",
     "language": "language",

@@ -234,6 +234,38 @@ class SeriesSearchHelper(
           }
         } to emptySet()
 
+      is SearchCondition.Folder ->
+        Tables.SERIES.ID.let { field ->
+          val folder = bookFolderField(Tables.BOOK.URL, Tables.LIBRARY.ROOT)
+          val innerEquals = { value: String ->
+            DSL
+              .select(Tables.BOOK.SERIES_ID)
+              .from(Tables.BOOK)
+              .join(Tables.LIBRARY)
+              .on(Tables.BOOK.LIBRARY_ID.eq(Tables.LIBRARY.ID))
+              .where(
+                folder
+                  .unicode1()
+                  .equal(value),
+              )
+          }
+          val innerAny = {
+            DSL
+              .select(Tables.BOOK.SERIES_ID)
+              .from(Tables.BOOK)
+              .join(Tables.LIBRARY)
+              .on(Tables.BOOK.LIBRARY_ID.eq(Tables.LIBRARY.ID))
+              .where(folder.isNotNull)
+          }
+
+          when (searchCondition.operator) {
+            is SearchOperator.Is -> field.`in`(innerEquals(searchCondition.operator.value))
+            is SearchOperator.IsNot -> field.notIn(innerEquals(searchCondition.operator.value))
+            is SearchOperator.IsNullT<*> -> field.notIn(innerAny())
+            is SearchOperator.IsNotNullT<*> -> field.`in`(innerAny())
+          }
+        } to emptySet()
+
       is SearchCondition.Language -> searchCondition.operator.toCondition(Tables.SERIES_METADATA.LANGUAGE, true) to setOf(RequiredJoin.SeriesMetadata)
 
       is SearchCondition.Publisher -> searchCondition.operator.toCondition(Tables.SERIES_METADATA.PUBLISHER, true) to setOf(RequiredJoin.SeriesMetadata)

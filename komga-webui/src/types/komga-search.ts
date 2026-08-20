@@ -110,6 +110,14 @@ export class SearchConditionGenre implements SearchConditionSeries {
   }
 }
 
+export class SearchConditionFolder implements SearchConditionSeries {
+  folder: SearchOperatorEquality
+
+  constructor(op: SearchOperatorEquality) {
+    this.folder = op
+  }
+}
+
 export class SearchConditionTag implements SearchConditionBook, SearchConditionSeries {
   tag: SearchOperatorEquality
 

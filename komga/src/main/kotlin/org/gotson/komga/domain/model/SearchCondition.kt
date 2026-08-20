@@ -15,7 +15,7 @@ class SearchCondition {
 
   @Schema(
     name = "SearchConditionSeries",
-    oneOf = [AnyOfSeries::class, AllOfSeries::class, LibraryId::class, CollectionId::class, Deleted::class, Complete::class, OneShot::class, Title::class, TitleSort::class, ReleaseDate::class, Tag::class, SharingLabel::class, Publisher::class, Language::class, Genre::class, AgeRating::class, ReadStatus::class, SeriesStatus::class, Author::class],
+    oneOf = [AnyOfSeries::class, AllOfSeries::class, LibraryId::class, CollectionId::class, Deleted::class, Complete::class, OneShot::class, Title::class, TitleSort::class, ReleaseDate::class, Tag::class, SharingLabel::class, Publisher::class, Language::class, Genre::class, Folder::class, AgeRating::class, ReadStatus::class, SeriesStatus::class, Author::class],
   )
   @JsonTypeInfo(use = JsonTypeInfo.Id.DEDUCTION)
   sealed interface Series
@@ -151,6 +151,12 @@ class SearchCondition {
   @Schema(name = "SearchConditionGenre")
   data class Genre(
     @JsonProperty("genre")
+    val operator: SearchOperator.EqualityNullable<String>,
+  ) : Series
+
+  @Schema(name = "SearchConditionFolder")
+  data class Folder(
+    @JsonProperty("folder")
     val operator: SearchOperator.EqualityNullable<String>,
   ) : Series
 

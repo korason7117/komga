@@ -41,6 +41,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
+import java.net.URL
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -804,6 +805,86 @@ class SeriesSearchTest(
 
       assertThat(found.map { it.name }).containsExactlyInAnyOrder("1", "2", "3")
       assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("1", "2", "3")
+    }
+  }
+
+  @Test
+  fun `given series with books in nested folders when searching by folder then results are accurate`() {
+    // the library root must end with a trailing slash, matching what Path#toUri() produces in production
+    val libraryFolder = makeLibrary("LibraryFolder", path = "file:/LibraryFolder/")
+    libraryRepository.insert(libraryFolder)
+
+    makeSeries("Superhuman Era", libraryFolder.id).let { series ->
+      seriesLifecycle.createSeries(series)
+      val book =
+        makeBook(
+          "Superhuman Era c0024",
+          libraryId = libraryFolder.id,
+          seriesId = series.id,
+          url = URL("file:/LibraryFolder/ManHwa/Superhuman%20Era/Superhuman%20Era%20c0024.cbz"),
+        )
+      seriesLifecycle.addBooks(series, listOf(book))
+    }
+    makeSeries("Some Comic", libraryFolder.id).let { series ->
+      seriesLifecycle.createSeries(series)
+      val book =
+        makeBook(
+          "Some Comic 001",
+          libraryId = libraryFolder.id,
+          seriesId = series.id,
+          // nested two levels deep under the top-level folder: the top folder should still be matched
+          url = URL("file:/LibraryFolder/Comics/Marvel/Some%20Comic/Some%20Comic%20001.cbz"),
+        )
+      seriesLifecycle.addBooks(series, listOf(book))
+    }
+    makeSeries("Loose Oneshot", libraryFolder.id).let { series ->
+      seriesLifecycle.createSeries(series)
+      // book sitting directly at the library root, with no sub-folder at all
+      val book =
+        makeBook(
+          "Loose Oneshot",
+          libraryId = libraryFolder.id,
+          seriesId = series.id,
+          url = URL("file:/LibraryFolder/Loose%20Oneshot.cbz"),
+        )
+      seriesLifecycle.addBooks(series, listOf(book))
+    }
+
+    run {
+      val search = SeriesSearch(SearchCondition.Folder(SearchOperator.Is("ManHwa")))
+      val found = seriesDao.findAll(search.condition, SearchContext(user1), Pageable.unpaged()).content
+      val foundDto = seriesDtoDao.findAll(search, SearchContext(user1), Pageable.unpaged()).content
+
+      assertThat(found.map { it.name }).containsExactlyInAnyOrder("Superhuman Era")
+      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("Superhuman Era")
+    }
+
+    run {
+      val search = SeriesSearch(SearchCondition.Folder(SearchOperator.IsNot("ManHwa")))
+      val found = seriesDao.findAll(search.condition, SearchContext(user1), Pageable.unpaged()).content
+      val foundDto = seriesDtoDao.findAll(search, SearchContext(user1), Pageable.unpaged()).content
+
+      assertThat(found.map { it.name }).containsExactlyInAnyOrder("Some Comic", "Loose Oneshot")
+      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("Some Comic", "Loose Oneshot")
+    }
+
+    run {
+      val search = SeriesSearch(SearchCondition.Folder(SearchOperator.IsNotNullT()))
+      val found = seriesDao.findAll(search.condition, SearchContext(user1), Pageable.unpaged()).content
+      val foundDto = seriesDtoDao.findAll(search, SearchContext(user1), Pageable.unpaged()).content
+
+      assertThat(found.map { it.name }).containsExactlyInAnyOrder("Superhuman Era", "Some Comic")
+      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("Superhuman Era", "Some Comic")
+    }
+
+    run {
+      // the book at the library root has no sub-folder, so its series only matches the "null" side
+      val search = SeriesSearch(SearchCondition.Folder(SearchOperator.IsNullT()))
+      val found = seriesDao.findAll(search.condition, SearchContext(user1), Pageable.unpaged()).content
+      val foundDto = seriesDtoDao.findAll(search, SearchContext(user1), Pageable.unpaged()).content
+
+      assertThat(found.map { it.name }).containsExactlyInAnyOrder("Loose Oneshot")
+      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("Loose Oneshot")
     }
   }
 

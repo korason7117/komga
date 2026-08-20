@@ -9,6 +9,7 @@ import org.gotson.komga.domain.persistence.ReferentialRepository
 import org.gotson.komga.infrastructure.jooq.ContentRestrictionsSearchHelper
 import org.gotson.komga.infrastructure.jooq.RequiredJoin
 import org.gotson.komga.infrastructure.jooq.SplitDslDaoBase
+import org.gotson.komga.infrastructure.jooq.bookFolderField
 import org.gotson.komga.infrastructure.jooq.buildPage
 import org.gotson.komga.infrastructure.jooq.udfStripAccents
 import org.gotson.komga.infrastructure.jooq.unicode3
@@ -48,6 +49,7 @@ class ReferentialDao(
   private val bmat = Tables.BOOK_METADATA_AGGREGATION_TAG
   private val s = Tables.SERIES
   private val b = Tables.BOOK
+  private val l = Tables.LIBRARY
   private val g = Tables.SERIES_METADATA_GENRE
   private val bt = Tables.BOOK_METADATA_TAG
   private val st = Tables.SERIES_METADATA_TAG
@@ -229,6 +231,36 @@ class ReferentialDao(
     filterBy?.let { require(it.type in setOf(FilterByEntity.LIBRARY, FilterByEntity.COLLECTION)) }
 
     return findGeneric(context, search, filterBy, pageable, g, g.GENRE, g.SERIES_ID, null, { it?.genre }, Sort.by("genre"))
+  }
+
+  override fun findAllFolders(filterOnLibraryIds: Collection<String>?): Set<String> {
+    val folder = bookFolderField(b.URL, l.ROOT)
+    return dslRO
+      .selectDistinct(folder)
+      .from(b)
+      .join(l)
+      .on(b.LIBRARY_ID.eq(l.ID))
+      .where(folder.isNotNull)
+      .apply { filterOnLibraryIds?.let { and(b.LIBRARY_ID.`in`(it)) } }
+      .orderBy(folder.unicode3())
+      .fetchSet(folder)
+  }
+
+  override fun findAllFoldersByLibraries(
+    libraryIds: Set<String>,
+    filterOnLibraryIds: Collection<String>?,
+  ): Set<String> {
+    val folder = bookFolderField(b.URL, l.ROOT)
+    return dslRO
+      .selectDistinct(folder)
+      .from(b)
+      .join(l)
+      .on(b.LIBRARY_ID.eq(l.ID))
+      .where(b.LIBRARY_ID.`in`(libraryIds))
+      .and(folder.isNotNull)
+      .apply { filterOnLibraryIds?.let { and(b.LIBRARY_ID.`in`(it)) } }
+      .orderBy(folder.unicode3())
+      .fetchSet(folder)
   }
 
   @Deprecated("Use findTags instead")

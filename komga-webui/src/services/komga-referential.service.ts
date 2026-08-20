@@ -73,6 +73,24 @@ export default class KomgaReferentialService {
     }
   }
 
+  async getFolders(libraryIds?: string[]): Promise<string[]> {
+    try {
+      const params = {} as any
+      if (libraryIds) params.library_id = libraryIds
+
+      return (await this.http.get('/api/v1/folders', {
+        params: params,
+        paramsSerializer: params => qs.stringify(params, {indices: false}),
+      })).data
+    } catch (e) {
+      let msg = 'An error occurred while trying to retrieve folders'
+      if (e.response.data.message) {
+        msg += `: ${e.response.data.message}`
+      }
+      throw new Error(msg)
+    }
+  }
+
   async getTags(): Promise<string[]> {
     try {
       return (await this.http.get('/api/v1/tags')).data

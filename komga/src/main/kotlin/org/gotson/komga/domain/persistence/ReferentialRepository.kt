@@ -89,6 +89,13 @@ interface ReferentialRepository {
     pageable: Pageable,
   ): Page<String>
 
+  fun findAllFolders(filterOnLibraryIds: Collection<String>?): Set<String>
+
+  fun findAllFoldersByLibraries(
+    libraryIds: Set<String>,
+    filterOnLibraryIds: Collection<String>?,
+  ): Set<String>
+
   @Deprecated("Use findTags instead")
   fun findAllSeriesAndBookTags(filterOnLibraryIds: Collection<String>?): Set<String>
 

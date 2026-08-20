@@ -10,6 +10,7 @@ import org.jooq.Condition
 import org.jooq.Field
 import org.jooq.SortField
 import org.jooq.impl.DSL
+import org.jooq.impl.SQLDataType
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
@@ -29,6 +30,8 @@ fun Field<String>.unicode3() = this.collate(SqliteUdfDataSource.COLLATION_UNICOD
 
 fun Field<String>.udfStripAccents() = DSL.function(SqliteUdfDataSource.UDF_STRIP_ACCENTS, String::class.java, this)
 
+fun Field<String>.udfUrlDecode() = DSL.function(SqliteUdfDataSource.UDF_URL_DECODE, String::class.java, this)
+
 fun Sort.toOrderBy(sorts: Map<String, Field<out Any>>): List<SortField<out Any>> =
   this.mapNotNull {
     it.toSortField(sorts)
@@ -47,6 +50,38 @@ fun Field<String>.sortByValues(
   val multiplier = if (asc) 1 else -1
   values.forEachIndexed { index, value -> c = c.`when`(value, index * multiplier) }
   return c.otherwise(Int.MAX_VALUE)
+}
+
+/**
+ * Computes the top-level folder name of a book's file, relative to its library's root folder.
+ *
+ * This is derived purely from the existing [bookUrl] (BOOK.URL) and [libraryRoot] (LIBRARY.ROOT) columns,
+ * no additional column or table is required.
+ *
+ * For example, given a library root of `file:/Library/` and a book url of
+ * `file:/Library/ManHwa/Superhuman%20Era/Superhuman%20Era%20c0024.cbz`, this returns `ManHwa`.
+ *
+ * The result is percent-decoded (e.g. a folder literally named `Manga FR` is stored/matched as `Manga%20FR`
+ * in the URL, but this returns `Manga FR`), so it can be displayed and searched as a human-readable name.
+ *
+ * Returns null if the book file sits directly at the root of the library (no sub-folder).
+ */
+fun bookFolderField(
+  bookUrl: Field<String>,
+  libraryRoot: Field<String>,
+): Field<String> {
+  val rawFolder =
+    DSL.field(
+      """
+      CASE WHEN instr(substr({0}, length({1}) + 1), '/') > 0
+           THEN substr(substr({0}, length({1}) + 1), 1, instr(substr({0}, length({1}) + 1), '/') - 1)
+      END
+      """.trimIndent(),
+      SQLDataType.VARCHAR,
+      bookUrl,
+      libraryRoot,
+    )
+  return rawFolder.udfUrlDecode()
 }
 
 fun Field<String>.inOrNoCondition(list: Collection<String>?): Condition =

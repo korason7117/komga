@@ -8,6 +8,8 @@ import org.sqlite.Collation
 import org.sqlite.Function
 import org.sqlite.SQLiteConnection
 import org.sqlite.SQLiteDataSource
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import java.sql.Connection
 
 private val log = KotlinLogging.logger {}
@@ -15,6 +17,7 @@ private val log = KotlinLogging.logger {}
 class SqliteUdfDataSource : SQLiteDataSource() {
   companion object {
     const val UDF_STRIP_ACCENTS = "UDF_STRIP_ACCENTS"
+    const val UDF_URL_DECODE = "UDF_URL_DECODE"
     const val COLLATION_UNICODE_1 = "COLLATION_UNICODE_1"
     const val COLLATION_UNICODE_3 = "COLLATION_UNICODE_3"
   }
@@ -29,6 +32,7 @@ class SqliteUdfDataSource : SQLiteDataSource() {
   private fun addAllUdf(connection: SQLiteConnection) {
     createUdfRegexp(connection)
     createUdfStripAccents(connection)
+    createUdfUrlDecode(connection)
     createUnicodeCollation(connection, COLLATION_UNICODE_3, Collators.collator3)
     createUnicodeCollation(connection, COLLATION_UNICODE_1, Collators.collator1)
   }
@@ -60,6 +64,30 @@ class SqliteUdfDataSource : SQLiteDataSource() {
             null -> error("Argument must not be null")
             else -> result(text.stripAccents())
           }
+      },
+    )
+  }
+
+  private fun createUdfUrlDecode(connection: SQLiteConnection) {
+    log.debug { "Adding custom $UDF_URL_DECODE function" }
+    Function.create(
+      connection,
+      UDF_URL_DECODE,
+      object : Function() {
+        override fun xFunc() {
+          when (val text = value_text(0)) {
+            null -> result()
+            else ->
+              try {
+                // URLDecoder is designed for application/x-www-form-urlencoded and would turn a literal
+                // '+' into a space; escape it first so percent-encoded URI path segments decode correctly.
+                result(URLDecoder.decode(text.replace("+", "%2B"), StandardCharsets.UTF_8))
+              } catch (e: IllegalArgumentException) {
+                // not a validly percent-encoded string, return as-is
+                result(text)
+              }
+          }
+        }
       },
     )
   }

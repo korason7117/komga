@@ -67,6 +67,20 @@ class ReferentialV1Controller(
       else -> referentialRepository.findAllGenres(principal.user.getAuthorizedLibraryIds(null))
     }
 
+  @GetMapping("folders")
+  @Operation(
+    summary = "List folders",
+    description = "List the top-level folder name of each series' books, relative to their library's root folder. This is derived from existing data, no additional metadata is stored.",
+  )
+  fun getFolders(
+    @AuthenticationPrincipal principal: KomgaPrincipal,
+    @RequestParam(name = "library_id", required = false) libraryIds: Set<String> = emptySet(),
+  ): Set<String> =
+    when {
+      libraryIds.isNotEmpty() -> referentialRepository.findAllFoldersByLibraries(libraryIds, principal.user.getAuthorizedLibraryIds(null))
+      else -> referentialRepository.findAllFolders(principal.user.getAuthorizedLibraryIds(null))
+    }
+
   @GetMapping("sharing-labels")
   @Deprecated("Use GET /v2/sharing-labels instead")
   @Operation(summary = "List sharing labels", description = "Use GET /v2/sharing-labels instead. Deprecated since 1.26.0", tags = [OpenApiConfiguration.TagNames.DEPRECATED])

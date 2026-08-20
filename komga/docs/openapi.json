@@ -7,7 +7,7 @@
       "url": "https://github.com/gotson/komga/blob/master/LICENSE"
     },
     "title": "Komga API",
-    "version": "1.6.1"
+    "version": "1.6.2"
   },
   "externalDocs": {
     "description": "Komga documentation",
@@ -3569,7 +3569,7 @@
     },
     "/api/v1/folders": {
       "get": {
-        "description": "List the top-level folder name of each series\u0027 books, relative to their library\u0027s root folder. This is derived from existing data, no additional metadata is stored.",
+        "description": "List the top-level folder name of each series, relative to their library\u0027s root folder. This is derived from existing data, no additional metadata is stored.",
         "operationId": "getFolders",
         "parameters": [
           {

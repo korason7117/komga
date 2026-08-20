@@ -865,13 +865,32 @@ class SeriesSearchTest(
       seriesLifecycle.addBooks(series, listOf(book))
     }
 
+    makeSeries("Multi Source", suwayomiLibrary.id).let { series ->
+      seriesLifecycle.createSeries(series)
+      val book1 =
+        makeBook(
+          "c01",
+          libraryId = suwayomiLibrary.id,
+          seriesId = series.id,
+          url = URL("file:/Library/Suwayomi/MangaDex/Multi%20Source/c01.cbz"),
+        )
+      val book2 =
+        makeBook(
+          "c02",
+          libraryId = suwayomiLibrary.id,
+          seriesId = series.id,
+          url = URL("file:/Library/Suwayomi/TCB%20Scans/Multi%20Source/c02.cbz"),
+        )
+      seriesLifecycle.addBooks(series, listOf(book1, book2))
+    }
+
     run {
       val search = SeriesSearch(SearchCondition.Folder(SearchOperator.Is("MangaDex")))
       val found = seriesDao.findAll(search.condition, SearchContext(user1), Pageable.unpaged()).content
       val foundDto = seriesDtoDao.findAll(search, SearchContext(user1), Pageable.unpaged()).content
 
-      assertThat(found.map { it.name }).containsExactlyInAnyOrder("One Piece")
-      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("One Piece")
+      assertThat(found.map { it.name }).containsExactlyInAnyOrder("One Piece", "Multi Source")
+      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("One Piece", "Multi Source")
     }
 
     run {
@@ -890,18 +909,18 @@ class SeriesSearchTest(
       val found = seriesDao.findAll(search.condition, SearchContext(user1), Pageable.unpaged()).content
       val foundDto = seriesDtoDao.findAll(search, SearchContext(user1), Pageable.unpaged()).content
 
-      assertThat(found.map { it.name }).containsExactlyInAnyOrder("One Piece", "Some Comic")
-      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("One Piece", "Some Comic")
+      assertThat(found.map { it.name }).containsExactlyInAnyOrder("One Piece", "Some Comic", "Multi Source")
+      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("One Piece", "Some Comic", "Multi Source")
     }
 
     run {
-      // "All of" MangaDex and TCB Scans: empty
+      // "All of" MangaDex and TCB Scans: matches series that has books in both folders
       val search = SeriesSearch(SearchCondition.AllOfSeries(SearchCondition.Folder(SearchOperator.Is("MangaDex")), SearchCondition.Folder(SearchOperator.Is("TCB Scans"))))
       val found = seriesDao.findAll(search.condition, SearchContext(user1), Pageable.unpaged()).content
       val foundDto = seriesDtoDao.findAll(search, SearchContext(user1), Pageable.unpaged()).content
 
-      assertThat(found).isEmpty()
-      assertThat(foundDto).isEmpty()
+      assertThat(found.map { it.name }).containsExactlyInAnyOrder("Multi Source")
+      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("Multi Source")
     }
 
     run {
@@ -910,8 +929,8 @@ class SeriesSearchTest(
       val found = seriesDao.findAll(search.condition, SearchContext(user1), Pageable.unpaged()).content
       val foundDto = seriesDtoDao.findAll(search, SearchContext(user1), Pageable.unpaged()).content
 
-      assertThat(found.map { it.name }).containsExactlyInAnyOrder("One Piece", "Some Comic")
-      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("One Piece", "Some Comic")
+      assertThat(found.map { it.name }).containsExactlyInAnyOrder("One Piece", "Some Comic", "Multi Source")
+      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("One Piece", "Some Comic", "Multi Source")
     }
 
     run {

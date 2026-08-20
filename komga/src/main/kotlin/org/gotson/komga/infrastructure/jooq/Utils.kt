@@ -53,30 +53,33 @@ fun Field<String>.sortByValues(
 }
 
 /**
- * Computes the top-level folder name of a series relative to its library's root folder,
- * but only when the series directory is nested at least 1 folder level below the library root
- * (i.e. `<LibraryRoot>/<Folder>/<SeriesDirectory>`).
+ * Computes the top-level folder name of a book's file relative to its library's root folder,
+ * but only when the book is nested at least 2 folder levels deep (e.g. `<source>/<series>/<book.cbz>`).
  *
- * If a series sits directly under the library root (e.g. `<LibraryRoot>/<SeriesDirectory>` as in standard libraries),
- * or sits directly at the root of the library (oneshots), it returns null.
+ * If a book is only 1 folder level deep (e.g. `<series>/<book.cbz>` as in standard libraries),
+ * or sits directly at the root of the library, it returns null.
  *
- * This allows libraries structured with intermediate subfolders (such as Suwayomi: `Suwayomi/<Source>/<Series>/`)
+ * This allows libraries structured with intermediate subfolders (such as Suwayomi: `Suwayomi/<Source>/<Series>/<Book>`)
  * to be filtered by folder/source name without hardcoding folder names or affecting single-level libraries.
  *
  * The result is percent-decoded (e.g. `TCB%20Scans` returns `TCB Scans`).
  */
-fun seriesFolderField(
-  seriesUrl: Field<String>,
+fun bookFolderField(
+  bookUrl: Field<String>,
   libraryRoot: Field<String>,
 ): Field<String> {
-  // path portion after the library root, e.g. "MangaDex/One piece/" or "Superhuman Era/"
-  val relative = DSL.field("substr({0}, length({1}) + 1)", SQLDataType.VARCHAR, seriesUrl, libraryRoot)
-  // remove trailing slash if present
-  val trimmed = DSL.field("rtrim({0}, '/')", SQLDataType.VARCHAR, relative)
-  // position of the first '/' separator in the trimmed relative path
-  val slash = DSL.field("instr({0}, '/')", SQLDataType.INTEGER, trimmed)
-  // 1st path segment (e.g. "MangaDex" or null if no separator)
-  val rawFolder = DSL.field("CASE WHEN {1} > 0 THEN substr({0}, 1, {1} - 1) END", SQLDataType.VARCHAR, trimmed, slash)
+  // path portion after the library root, e.g. "MangaDex/One piece/c0024.cbz" or "Superhuman Era/Superhuman Era c0024.cbz"
+  val relative = DSL.field("substr({0}, length({1}) + 1)", SQLDataType.VARCHAR, bookUrl, libraryRoot)
+  // position of the 1st '/' separator
+  val slash1 = DSL.field("instr({0}, '/')", SQLDataType.INTEGER, relative)
+  // 1st path segment (e.g. "MangaDex" or "Superhuman Era")
+  val firstSegment = DSL.field("CASE WHEN {1} > 0 THEN substr({0}, 1, {1} - 1) END", SQLDataType.VARCHAR, relative, slash1)
+  // everything after the 1st path segment (e.g. "One piece/c0024.cbz" or "Superhuman Era c0024.cbz")
+  val afterFirst = DSL.field("CASE WHEN {1} > 0 THEN substr({0}, {1} + 1) END", SQLDataType.VARCHAR, relative, slash1)
+  // position of the 2nd '/' separator
+  val slash2 = DSL.field("instr({0}, '/')", SQLDataType.INTEGER, afterFirst)
+  // only return the 1st segment if there is at least a 2nd '/' (i.e. at least 2 directory levels deep)
+  val rawFolder = DSL.field("CASE WHEN {0} > 0 THEN {1} END", SQLDataType.VARCHAR, slash2, firstSegment)
   return rawFolder.udfUrlDecode()
 }
 

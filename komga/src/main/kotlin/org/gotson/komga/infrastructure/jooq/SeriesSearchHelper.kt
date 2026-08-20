@@ -236,13 +236,13 @@ class SeriesSearchHelper(
 
       is SearchCondition.Folder ->
         Tables.SERIES.ID.let { field ->
-          val folder = seriesFolderField(Tables.SERIES.URL, Tables.LIBRARY.ROOT)
+          val folder = bookFolderField(Tables.BOOK.URL, Tables.LIBRARY.ROOT)
           val innerEquals = { value: String ->
             DSL
-              .select(Tables.SERIES.ID)
-              .from(Tables.SERIES)
+              .select(Tables.BOOK.SERIES_ID)
+              .from(Tables.BOOK)
               .join(Tables.LIBRARY)
-              .on(Tables.SERIES.LIBRARY_ID.eq(Tables.LIBRARY.ID))
+              .on(Tables.BOOK.LIBRARY_ID.eq(Tables.LIBRARY.ID))
               .where(
                 folder
                   .unicode1()
@@ -251,10 +251,10 @@ class SeriesSearchHelper(
           }
           val innerAny = {
             DSL
-              .select(Tables.SERIES.ID)
-              .from(Tables.SERIES)
+              .select(Tables.BOOK.SERIES_ID)
+              .from(Tables.BOOK)
               .join(Tables.LIBRARY)
-              .on(Tables.SERIES.LIBRARY_ID.eq(Tables.LIBRARY.ID))
+              .on(Tables.BOOK.LIBRARY_ID.eq(Tables.LIBRARY.ID))
               .where(folder.isNotNull)
           }
 

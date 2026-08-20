@@ -810,81 +810,118 @@ class SeriesSearchTest(
 
   @Test
   fun `given series with books in nested folders when searching by folder then results are accurate`() {
-    // the library root must end with a trailing slash, matching what Path#toUri() produces in production
-    val libraryFolder = makeLibrary("LibraryFolder", path = "file:/LibraryFolder/")
-    libraryRepository.insert(libraryFolder)
+    // Multi-level library (e.g. Suwayomi / scraped sources: <LibraryRoot>/<Source>/<Series>/<Book>)
+    val suwayomiLibrary = makeLibrary("Suwayomi", path = "file:/Library/Suwayomi/")
+    libraryRepository.insert(suwayomiLibrary)
 
-    makeSeries("Superhuman Era", libraryFolder.id).let { series ->
+    // Single-level standard library (<LibraryRoot>/<Series>/<Book>)
+    val manhwaLibrary = makeLibrary("ManHwa", path = "file:/Library/ManHwa/")
+    libraryRepository.insert(manhwaLibrary)
+
+    makeSeries("One Piece", suwayomiLibrary.id).let { series ->
       seriesLifecycle.createSeries(series)
       val book =
         makeBook(
-          "Superhuman Era c0024",
-          libraryId = libraryFolder.id,
+          "c0024",
+          libraryId = suwayomiLibrary.id,
           seriesId = series.id,
-          url = URL("file:/LibraryFolder/ManHwa/Superhuman%20Era/Superhuman%20Era%20c0024.cbz"),
+          url = URL("file:/Library/Suwayomi/MangaDex/One%20piece/c0024.cbz"),
         )
       seriesLifecycle.addBooks(series, listOf(book))
     }
-    makeSeries("Some Comic", libraryFolder.id).let { series ->
+    makeSeries("Some Comic", suwayomiLibrary.id).let { series ->
       seriesLifecycle.createSeries(series)
       val book =
         makeBook(
-          "Some Comic 001",
-          libraryId = libraryFolder.id,
+          "c01",
+          libraryId = suwayomiLibrary.id,
           seriesId = series.id,
-          // nested two levels deep under the top-level folder: the top folder should still be matched
-          url = URL("file:/LibraryFolder/Comics/Marvel/Some%20Comic/Some%20Comic%20001.cbz"),
+          url = URL("file:/Library/Suwayomi/TCB%20Scans/Some%20Comic/c01.cbz"),
         )
       seriesLifecycle.addBooks(series, listOf(book))
     }
-    makeSeries("Loose Oneshot", libraryFolder.id).let { series ->
+    makeSeries("Loose Oneshot", suwayomiLibrary.id).let { series ->
       seriesLifecycle.createSeries(series)
-      // book sitting directly at the library root, with no sub-folder at all
+      // loose book sitting directly at library root (0 folder levels) -> folder is null
       val book =
         makeBook(
           "Loose Oneshot",
-          libraryId = libraryFolder.id,
+          libraryId = suwayomiLibrary.id,
           seriesId = series.id,
-          url = URL("file:/LibraryFolder/Loose%20Oneshot.cbz"),
+          url = URL("file:/Library/Suwayomi/Loose%20Oneshot.cbz"),
+        )
+      seriesLifecycle.addBooks(series, listOf(book))
+    }
+    makeSeries("Superhuman Era", manhwaLibrary.id).let { series ->
+      seriesLifecycle.createSeries(series)
+      // standard 1 folder level deep (<Series>/<Book>) -> folder is null
+      val book =
+        makeBook(
+          "Superhuman Era c0024",
+          libraryId = manhwaLibrary.id,
+          seriesId = series.id,
+          url = URL("file:/Library/ManHwa/Superhuman%20Era/Superhuman%20Era%20c0024.cbz"),
         )
       seriesLifecycle.addBooks(series, listOf(book))
     }
 
     run {
-      val search = SeriesSearch(SearchCondition.Folder(SearchOperator.Is("ManHwa")))
+      val search = SeriesSearch(SearchCondition.Folder(SearchOperator.Is("MangaDex")))
       val found = seriesDao.findAll(search.condition, SearchContext(user1), Pageable.unpaged()).content
       val foundDto = seriesDtoDao.findAll(search, SearchContext(user1), Pageable.unpaged()).content
 
-      assertThat(found.map { it.name }).containsExactlyInAnyOrder("Superhuman Era")
-      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("Superhuman Era")
+      assertThat(found.map { it.name }).containsExactlyInAnyOrder("One Piece")
+      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("One Piece")
     }
 
     run {
-      val search = SeriesSearch(SearchCondition.Folder(SearchOperator.IsNot("ManHwa")))
+      // 1-level deep series folder name is not considered a folder filter value
+      val search = SeriesSearch(SearchCondition.Folder(SearchOperator.Is("Superhuman Era")))
       val found = seriesDao.findAll(search.condition, SearchContext(user1), Pageable.unpaged()).content
       val foundDto = seriesDtoDao.findAll(search, SearchContext(user1), Pageable.unpaged()).content
 
-      assertThat(found.map { it.name }).containsExactlyInAnyOrder("Some Comic", "Loose Oneshot")
-      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("Some Comic", "Loose Oneshot")
+      assertThat(found).isEmpty()
+      assertThat(foundDto).isEmpty()
     }
 
     run {
+      // "Any of" MangaDex or TCB Scans
+      val search = SeriesSearch(SearchCondition.AnyOfSeries(SearchCondition.Folder(SearchOperator.Is("MangaDex")), SearchCondition.Folder(SearchOperator.Is("TCB Scans"))))
+      val found = seriesDao.findAll(search.condition, SearchContext(user1), Pageable.unpaged()).content
+      val foundDto = seriesDtoDao.findAll(search, SearchContext(user1), Pageable.unpaged()).content
+
+      assertThat(found.map { it.name }).containsExactlyInAnyOrder("One Piece", "Some Comic")
+      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("One Piece", "Some Comic")
+    }
+
+    run {
+      // "All of" MangaDex and TCB Scans: empty
+      val search = SeriesSearch(SearchCondition.AllOfSeries(SearchCondition.Folder(SearchOperator.Is("MangaDex")), SearchCondition.Folder(SearchOperator.Is("TCB Scans"))))
+      val found = seriesDao.findAll(search.condition, SearchContext(user1), Pageable.unpaged()).content
+      val foundDto = seriesDtoDao.findAll(search, SearchContext(user1), Pageable.unpaged()).content
+
+      assertThat(found).isEmpty()
+      assertThat(foundDto).isEmpty()
+    }
+
+    run {
+      // Only series with >= 2 folder levels have a folder
       val search = SeriesSearch(SearchCondition.Folder(SearchOperator.IsNotNullT()))
       val found = seriesDao.findAll(search.condition, SearchContext(user1), Pageable.unpaged()).content
       val foundDto = seriesDtoDao.findAll(search, SearchContext(user1), Pageable.unpaged()).content
 
-      assertThat(found.map { it.name }).containsExactlyInAnyOrder("Superhuman Era", "Some Comic")
-      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("Superhuman Era", "Some Comic")
+      assertThat(found.map { it.name }).containsExactlyInAnyOrder("One Piece", "Some Comic")
+      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("One Piece", "Some Comic")
     }
 
     run {
-      // the book at the library root has no sub-folder, so its series only matches the "null" side
+      // 1-level deep series and root books match null
       val search = SeriesSearch(SearchCondition.Folder(SearchOperator.IsNullT()))
       val found = seriesDao.findAll(search.condition, SearchContext(user1), Pageable.unpaged()).content
       val foundDto = seriesDtoDao.findAll(search, SearchContext(user1), Pageable.unpaged()).content
 
-      assertThat(found.map { it.name }).containsExactlyInAnyOrder("Loose Oneshot")
-      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("Loose Oneshot")
+      assertThat(found.map { it.name }).containsExactlyInAnyOrder("Superhuman Era", "Loose Oneshot")
+      assertThat(foundDto.map { it.name }).containsExactlyInAnyOrder("Superhuman Era", "Loose Oneshot")
     }
   }
 

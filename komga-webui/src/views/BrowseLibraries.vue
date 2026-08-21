@@ -152,6 +152,7 @@ import SortList from '@/components/SortList.vue'
 import FilterPanels from '@/components/FilterPanels.vue'
 import FilterList from '@/components/FilterList.vue'
 import {
+  buildFilterCondition,
   extractFilterOptionsValues,
   mergeFilterParams,
   sortOrFilterActive,
@@ -815,17 +816,28 @@ export default Vue.extend({
           this.$store.getters.getLibrariesPinned.map((it: LibraryDto) => new SearchConditionLibraryId(new SearchOperatorIs(it.id))),
         ))
       }
-      if (this.filters.status && this.filters.status.length > 0) this.filtersMode?.status?.allOf ? conditions.push(new SearchConditionAllOfSeries(this.filters.status)) : conditions.push(new SearchConditionAnyOfSeries(this.filters.status))
-      if (this.filters.collection && this.filters.collection.length > 0) this.filtersMode?.collection?.allOf ? conditions.push(new SearchConditionAllOfSeries(this.filters.collection)) : conditions.push(new SearchConditionAnyOfSeries(this.filters.collection))
-      if (this.filters.readStatus && this.filters.readStatus.length > 0) conditions.push(new SearchConditionAnyOfSeries(this.filters.readStatus))
-      if (this.filters.genre && this.filters.genre.length > 0) this.filtersMode?.genre?.allOf ? conditions.push(new SearchConditionAllOfSeries(this.filters.genre)) : conditions.push(new SearchConditionAnyOfSeries(this.filters.genre))
-      if (this.filters.folder && this.filters.folder.length > 0) this.filtersMode?.folder?.allOf ? conditions.push(new SearchConditionAllOfSeries(this.filters.folder)) : conditions.push(new SearchConditionAnyOfSeries(this.filters.folder))
-      if (this.filters.tag && this.filters.tag.length > 0) this.filtersMode?.tag?.allOf ? conditions.push(new SearchConditionAllOfSeries(this.filters.tag)) : conditions.push(new SearchConditionAnyOfSeries(this.filters.tag))
-      if (this.filters.language && this.filters.language.length > 0) this.filtersMode?.language?.allOf ? conditions.push(new SearchConditionAllOfSeries(this.filters.language)) : conditions.push(new SearchConditionAnyOfSeries(this.filters.language))
-      if (this.filters.publisher && this.filters.publisher.length > 0) this.filtersMode?.publisher?.allOf ? conditions.push(new SearchConditionAllOfSeries(this.filters.publisher)) : conditions.push(new SearchConditionAnyOfSeries(this.filters.publisher))
-      if (this.filters.ageRating && this.filters.ageRating.length > 0) this.filtersMode?.ageRating?.allOf ? conditions.push(new SearchConditionAllOfSeries(this.filters.ageRating)) : conditions.push(new SearchConditionAnyOfSeries(this.filters.ageRating))
-      if (this.filters.releaseDate && this.filters.releaseDate.length > 0) this.filtersMode?.releaseDate?.allOf ? conditions.push(new SearchConditionAllOfSeries(this.filters.releaseDate)) : conditions.push(new SearchConditionAnyOfSeries(this.filters.releaseDate))
-      if (this.filters.sharingLabel && this.filters.sharingLabel.length > 0) this.filtersMode?.sharingLabel?.allOf ? conditions.push(new SearchConditionAllOfSeries(this.filters.sharingLabel)) : conditions.push(new SearchConditionAnyOfSeries(this.filters.sharingLabel))
+      const statusCondition = buildFilterCondition(this.filters.status, !!this.filtersMode?.status?.allOf)
+      if (statusCondition) conditions.push(statusCondition)
+      const collectionCondition = buildFilterCondition(this.filters.collection, !!this.filtersMode?.collection?.allOf)
+      if (collectionCondition) conditions.push(collectionCondition)
+      const readStatusCondition = buildFilterCondition(this.filters.readStatus, false)
+      if (readStatusCondition) conditions.push(readStatusCondition)
+      const genreCondition = buildFilterCondition(this.filters.genre, !!this.filtersMode?.genre?.allOf)
+      if (genreCondition) conditions.push(genreCondition)
+      const folderCondition = buildFilterCondition(this.filters.folder, !!this.filtersMode?.folder?.allOf)
+      if (folderCondition) conditions.push(folderCondition)
+      const tagCondition = buildFilterCondition(this.filters.tag, !!this.filtersMode?.tag?.allOf)
+      if (tagCondition) conditions.push(tagCondition)
+      const languageCondition = buildFilterCondition(this.filters.language, !!this.filtersMode?.language?.allOf)
+      if (languageCondition) conditions.push(languageCondition)
+      const publisherCondition = buildFilterCondition(this.filters.publisher, !!this.filtersMode?.publisher?.allOf)
+      if (publisherCondition) conditions.push(publisherCondition)
+      const ageRatingCondition = buildFilterCondition(this.filters.ageRating, !!this.filtersMode?.ageRating?.allOf)
+      if (ageRatingCondition) conditions.push(ageRatingCondition)
+      const releaseDateCondition = buildFilterCondition(this.filters.releaseDate, !!this.filtersMode?.releaseDate?.allOf)
+      if (releaseDateCondition) conditions.push(releaseDateCondition)
+      const sharingLabelCondition = buildFilterCondition(this.filters.sharingLabel, !!this.filtersMode?.sharingLabel?.allOf)
+      if (sharingLabelCondition) conditions.push(sharingLabelCondition)
       if (this.filters.complete && this.filters.complete.length > 0) conditions.push(...this.filters.complete)
       if (this.filters.oneshot && this.filters.oneshot.length > 0) conditions.push(...this.filters.oneshot)
       if (this.filters.deleted && this.filters.deleted.length > 0) conditions.push(...this.filters.deleted)
@@ -846,7 +858,8 @@ export default Vue.extend({
                 role: role,
               }))
           })
-          conditions.push(this.filtersMode[role]?.allOf ? new SearchConditionAllOfSeries(authorConditions) : new SearchConditionAnyOfSeries(authorConditions))
+          const authorCondition = buildFilterCondition(authorConditions, !!this.filtersMode[role]?.allOf)
+          if (authorCondition) conditions.push(authorCondition)
         }
       })
 

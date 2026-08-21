@@ -142,6 +142,7 @@ import SortList from '@/components/SortList.vue'
 import FilterPanels from '@/components/FilterPanels.vue'
 import FilterList from '@/components/FilterList.vue'
 import {
+  buildFilterConditionBook,
   extractFilterOptionsValues,
   mergeFilterParams,
   sortOrFilterActive,
@@ -602,7 +603,8 @@ export default Vue.extend({
         ))
       }
       if (this.filters.readStatus && this.filters.readStatus.length > 0) conditions.push(new SearchConditionAnyOfBook(this.filters.readStatus))
-      if (this.filters.tag && this.filters.tag.length > 0) this.filtersMode?.tag?.allOf ? conditions.push(new SearchConditionAllOfBook(this.filters.tag)) : conditions.push(new SearchConditionAnyOfBook(this.filters.tag))
+      const tagCondition = buildFilterConditionBook(this.filters.tag, !!this.filtersMode?.tag?.allOf)
+      if (tagCondition) conditions.push(tagCondition)
       if (this.filters.oneshot && this.filters.oneshot.length > 0) conditions.push(...this.filters.oneshot)
       if (this.filters.mediaProfile && this.filters.mediaProfile.length > 0) this.filtersMode?.mediaProfile?.allOf ? conditions.push(new SearchConditionAllOfBook(this.filters.mediaProfile)) : conditions.push(new SearchConditionAnyOfBook(this.filters.mediaProfile))
       if (this.filters.deleted && this.filters.deleted.length > 0) conditions.push(...this.filters.deleted)
@@ -625,7 +627,8 @@ export default Vue.extend({
                 role: role,
               }))
           })
-          conditions.push(this.filtersMode[role]?.allOf ? new SearchConditionAllOfBook(authorConditions) : new SearchConditionAnyOfBook(authorConditions))
+          const authorCondition = buildFilterConditionBook(authorConditions, !!this.filtersMode[role]?.allOf)
+          if (authorCondition) conditions.push(authorCondition)
         }
       })
 

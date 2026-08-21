@@ -532,6 +532,7 @@ import FilterDrawer from '@/components/FilterDrawer.vue'
 import FilterList from '@/components/FilterList.vue'
 import SortList from '@/components/SortList.vue'
 import {
+  buildFilterConditionBook,
   extractFilterOptionsValues,
   mergeFilterParams,
   sortOrFilterActive,
@@ -1051,7 +1052,8 @@ export default Vue.extend({
       const conditions = [] as SearchConditionBook[]
       conditions.push(new SearchConditionSeriesId(new SearchOperatorIs(seriesId)))
       if (this.filters.readStatus && this.filters.readStatus.length > 0) conditions.push(new SearchConditionAnyOfBook(this.filters.readStatus))
-      if (this.filters.tag && this.filters.tag.length > 0) this.filtersMode?.tag?.allOf ? conditions.push(new SearchConditionAllOfBook(this.filters.tag)) : conditions.push(new SearchConditionAnyOfBook(this.filters.tag))
+      const tagCondition = buildFilterConditionBook(this.filters.tag, !!this.filtersMode?.tag?.allOf)
+      if (tagCondition) conditions.push(tagCondition)
       if (this.filters.mediaProfile && this.filters.mediaProfile.length > 0) this.filtersMode?.mediaProfile?.allOf ? conditions.push(new SearchConditionAllOfBook(this.filters.mediaProfile)) : conditions.push(new SearchConditionAnyOfBook(this.filters.mediaProfile))
       if (this.filters.deleted && this.filters.deleted.length > 0) conditions.push(...this.filters.deleted)
       authorRoles.forEach((role: string) => {
@@ -1071,7 +1073,8 @@ export default Vue.extend({
                 role: role,
               }))
           })
-          conditions.push(this.filtersMode[role]?.allOf ? new SearchConditionAllOfBook(authorConditions) : new SearchConditionAnyOfBook(authorConditions))
+          const authorCondition = buildFilterConditionBook(authorConditions, !!this.filtersMode[role]?.allOf)
+          if (authorCondition) conditions.push(authorCondition)
         }
       })
 

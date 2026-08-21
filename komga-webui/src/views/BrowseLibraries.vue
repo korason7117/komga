@@ -824,7 +824,7 @@ export default Vue.extend({
       if (readStatusCondition) conditions.push(readStatusCondition)
       const genreCondition = buildFilterCondition(this.filters.genre, !!this.filtersMode?.genre?.allOf)
       if (genreCondition) conditions.push(genreCondition)
-      const folderCondition = buildFilterCondition(this.filters.folder, !!this.filtersMode?.folder?.allOf)
+      const folderCondition = buildFilterCondition(this.filters.folder, !!this.filtersMode?.folder?.allOf, true)
       if (folderCondition) conditions.push(folderCondition)
       const tagCondition = buildFilterCondition(this.filters.tag, !!this.filtersMode?.tag?.allOf)
       if (tagCondition) conditions.push(tagCondition)

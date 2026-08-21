@@ -75,17 +75,23 @@ export function isExcludeCondition(condition: any): boolean {
  * excludes leak into the include OR/AND grouping (and vice versa).
  *
  * Includes are combined with AND (allOf=true) or OR (allOf=false), per
- * the existing "All of / Any of" toggle. Excludes are always AND-ed
- * together: since each exclude condition already asserts "NOT X", ANDing
- * them implements "NOT X1 AND NOT X2" == "NOT (X1 OR X2)" - i.e. exclude
- * anything matching any of the excluded values. The include group and
- * the exclude group are then AND-ed together.
+ * the existing "All of / Any of" toggle - unless includesAlwaysOr is
+ * true, in which case includes are always OR-ed regardless of allOf.
+ * (Used by the folder filter: Komga auto-switches a category to All of
+ * the moment an exclude is added, and for folder specifically that
+ * shouldn't also force every included folder to match simultaneously.)
+ * Excludes are always AND-ed together: since each exclude condition
+ * already asserts "NOT X", ANDing them implements "NOT X1 AND NOT X2"
+ * == "NOT (X1 OR X2)" - i.e. exclude anything matching any of the
+ * excluded values. The include group and the exclude group are then
+ * AND-ed together.
  */
 function combineFilterCondition<T>(
   items: T[] | undefined,
   allOf: boolean,
   AllOfCtor: new (c: T[]) => T,
   AnyOfCtor: new (c: T[]) => T,
+  includesAlwaysOr = false,
 ): T | undefined {
   if (!items || items.length === 0) return undefined
 
@@ -93,7 +99,7 @@ function combineFilterCondition<T>(
   const excludes = items.filter(c => isExcludeCondition(c))
 
   const parts: T[] = []
-  if (includes.length > 0) parts.push(allOf ? new AllOfCtor(includes) : new AnyOfCtor(includes))
+  if (includes.length > 0) parts.push((allOf && !includesAlwaysOr) ? new AllOfCtor(includes) : new AnyOfCtor(includes))
   if (excludes.length > 0) parts.push(new AllOfCtor(excludes))
 
   if (parts.length === 0) return undefined
@@ -101,8 +107,8 @@ function combineFilterCondition<T>(
   return new AllOfCtor(parts)
 }
 
-export function buildFilterCondition(items: SearchConditionSeries[] | undefined, allOf: boolean): SearchConditionSeries | undefined {
-  return combineFilterCondition(items, allOf, SearchConditionAllOfSeries, SearchConditionAnyOfSeries)
+export function buildFilterCondition(items: SearchConditionSeries[] | undefined, allOf: boolean, includesAlwaysOr = false): SearchConditionSeries | undefined {
+  return combineFilterCondition(items, allOf, SearchConditionAllOfSeries, SearchConditionAnyOfSeries, includesAlwaysOr)
 }
 
 export function buildFilterConditionBook(items: SearchConditionBook[] | undefined, allOf: boolean): SearchConditionBook | undefined {

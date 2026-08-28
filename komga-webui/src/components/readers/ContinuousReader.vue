@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="continuous-reader" @mousedown="onMouseDown">
     <div :class="`d-flex flex-column px-0 mx-0` "
          v-scroll="onScroll"
     >
@@ -16,19 +16,19 @@
     </div>
 
     <!--  clickable zone: top  -->
-    <div @click="prev()"
+    <div @click="onClickTop()"
          class="top-quarter"
          style="z-index: 1;"
     />
 
     <!--  clickable zone: bottom  -->
-    <div @click="next()"
+    <div @click="onClickBottom()"
          class="bottom-quarter"
          style="z-index: 1;"
     />
 
     <!--  clickable zone: menu  -->
-    <div @click="centerClick()"
+    <div @click="onClickCenter()"
          class="center-vertical"
          style="z-index: 1;"
     />
@@ -49,6 +49,13 @@ export default Vue.extend({
       totalHeight: 1000,
       currentPage: 1,
       seen: [] as boolean[],
+      isMouseDown: false,
+      hasDragged: false,
+      dragStartX: 0,
+      dragStartY: 0,
+      dragStartScrollTop: 0,
+      dragStartScrollLeft: 0,
+      dragThreshold: 5,
     }
   },
   props: {
@@ -101,6 +108,8 @@ export default Vue.extend({
   },
   destroyed() {
     window.removeEventListener('keydown', this.keyPressed)
+    window.removeEventListener('mousemove', this.onMouseMove)
+    window.removeEventListener('mouseup', this.onMouseUp)
   },
   mounted() {
     if (this.page != this.currentPage) {
@@ -175,6 +184,61 @@ export default Vue.extend({
           return undefined
       }
     },
+    onMouseDown(e: MouseEvent) {
+      if (e.button !== 0) return
+      this.isMouseDown = true
+      this.hasDragged = false
+      this.dragStartX = e.clientX
+      this.dragStartY = e.clientY
+      this.dragStartScrollTop = window.scrollY || window.pageYOffset || document.documentElement.scrollTop
+      this.dragStartScrollLeft = window.scrollX || window.pageXOffset || document.documentElement.scrollLeft
+      window.addEventListener('mousemove', this.onMouseMove)
+      window.addEventListener('mouseup', this.onMouseUp)
+    },
+    onMouseMove(e: MouseEvent) {
+      if (!this.isMouseDown) return
+      const deltaX = e.clientX - this.dragStartX
+      const deltaY = e.clientY - this.dragStartY
+      if (!this.hasDragged) {
+        if (Math.hypot(deltaX, deltaY) > this.dragThreshold) {
+          this.hasDragged = true
+        }
+      }
+      if (this.hasDragged) {
+        window.scrollTo(this.dragStartScrollLeft - deltaX, this.dragStartScrollTop - deltaY)
+        e.preventDefault()
+      }
+    },
+    onMouseUp(e: MouseEvent) {
+      if (!this.isMouseDown) return
+      this.isMouseDown = false
+      window.removeEventListener('mousemove', this.onMouseMove)
+      window.removeEventListener('mouseup', this.onMouseUp)
+      if (this.hasDragged) {
+        const suppressClick = (ev: MouseEvent) => {
+          ev.stopPropagation()
+          ev.preventDefault()
+          window.removeEventListener('click', suppressClick, true)
+        }
+        window.addEventListener('click', suppressClick, true)
+        setTimeout(() => {
+          window.removeEventListener('click', suppressClick, true)
+          this.hasDragged = false
+        }, 50)
+      }
+    },
+    onClickCenter() {
+      if (this.hasDragged) return
+      this.centerClick()
+    },
+    onClickTop() {
+      if (this.hasDragged) return
+      this.prev()
+    },
+    onClickBottom() {
+      if (this.hasDragged) return
+      this.next()
+    },
     centerClick() {
       this.$emit('menu')
     },
@@ -198,6 +262,17 @@ export default Vue.extend({
 })
 </script>
 <style scoped>
+.continuous-reader {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.continuous-reader img {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+}
+
 .top-quarter {
   top: 0;
   height: 25vh;

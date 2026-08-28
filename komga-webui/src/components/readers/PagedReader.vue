@@ -1,5 +1,7 @@
 <template>
   <div
+    class="paged-reader"
+    @mousedown="onMouseDown"
     v-touch="{
                left: () => {if(swipe) {turnRight()}},
                right: () => {if(swipe) {turnLeft()}},
@@ -41,34 +43,34 @@
 
     <!--  clickable zone: left  -->
     <div v-if="!vertical"
-         @click="turnLeft()"
+         @click="onClickLeft()"
          class="left-quarter"
          style="z-index: 1;"
     />
 
     <!--  clickable zone: right  -->
     <div v-if="!vertical"
-         @click="turnRight()"
+         @click="onClickRight()"
          class="right-quarter"
          style="z-index: 1;"
     />
 
     <!--  clickable zone: top  -->
     <div v-if="vertical"
-         @click="verticalPrev()"
+         @click="onClickTop()"
          class="top-quarter"
          style="z-index: 1;"
     />
 
     <!--  clickable zone: bottom  -->
     <div v-if="vertical"
-         @click="verticalNext()"
+         @click="onClickBottom()"
          class="bottom-quarter"
          style="z-index: 1;"
     />
 
     <!--  clickable zone: menu  -->
-    <div @click="centerClick()"
+    <div @click="onClickCenter()"
          :class="`${vertical ? 'center-vertical' : 'center-horizontal'}`"
          style="z-index: 1;"
     />
@@ -82,6 +84,7 @@ import {PagedReaderLayout, ScaleType} from '@/types/enum-reader'
 import {shortcutsLTR, shortcutsRTL, shortcutsVertical} from '@/functions/shortcuts/paged-reader'
 import {PageDtoWithUrl} from '@/types/komga-books'
 import {buildSpreads} from '@/functions/book-spreads'
+import {throttle} from 'lodash'
 
 export default Vue.extend({
   name: 'PagedReader',
@@ -90,6 +93,13 @@ export default Vue.extend({
       logger: 'PagedReader',
       carouselPage: 0,
       spreads: [] as PageDtoWithUrl[][],
+      isMouseDown: false,
+      hasDragged: false,
+      dragStartX: 0,
+      dragStartY: 0,
+      dragStartScrollTop: 0,
+      dragStartScrollLeft: 0,
+      dragThreshold: 5,
     }
   },
   props: {
@@ -159,6 +169,8 @@ export default Vue.extend({
   },
   destroyed() {
     window.removeEventListener('keydown', this.keyPressed)
+    window.removeEventListener('mousemove', this.onMouseMove)
+    window.removeEventListener('mouseup', this.onMouseUp)
   },
   computed: {
     shortcuts(): any {
@@ -199,8 +211,92 @@ export default Vue.extend({
     },
   },
   methods: {
-    keyPressed(e: KeyboardEvent) {
+    keyPressed: throttle(function (this: any, e: KeyboardEvent) {
       this.shortcuts[e.key]?.execute(this)
+    }, 500),
+    onMouseDown(e: MouseEvent) {
+      if (e.button !== 0) return
+      this.isMouseDown = true
+      this.hasDragged = false
+      this.dragStartX = e.clientX
+      this.dragStartY = e.clientY
+      this.dragStartScrollTop = window.scrollY || window.pageYOffset || document.documentElement.scrollTop
+      this.dragStartScrollLeft = window.scrollX || window.pageXOffset || document.documentElement.scrollLeft
+      window.addEventListener('mousemove', this.onMouseMove)
+      window.addEventListener('mouseup', this.onMouseUp)
+    },
+    onMouseMove(e: MouseEvent) {
+      if (!this.isMouseDown) return
+      const deltaX = e.clientX - this.dragStartX
+      const deltaY = e.clientY - this.dragStartY
+      if (!this.hasDragged) {
+        if (Math.hypot(deltaX, deltaY) > this.dragThreshold) {
+          this.hasDragged = true
+        }
+      }
+      if (this.hasDragged) {
+        const maxScrollY = document.documentElement.scrollHeight - window.innerHeight
+        const maxScrollX = document.documentElement.scrollWidth - window.innerWidth
+        if (maxScrollY > 0 || maxScrollX > 0) {
+          window.scrollTo(this.dragStartScrollLeft - deltaX, this.dragStartScrollTop - deltaY)
+        }
+        e.preventDefault()
+      }
+    },
+    onMouseUp(e: MouseEvent) {
+      if (!this.isMouseDown) return
+      this.isMouseDown = false
+      window.removeEventListener('mousemove', this.onMouseMove)
+      window.removeEventListener('mouseup', this.onMouseUp)
+      if (this.hasDragged) {
+        const deltaX = e.clientX - this.dragStartX
+        const deltaY = e.clientY - this.dragStartY
+        const suppressClick = (ev: MouseEvent) => {
+          ev.stopPropagation()
+          ev.preventDefault()
+          window.removeEventListener('click', suppressClick, true)
+        }
+        window.addEventListener('click', suppressClick, true)
+        setTimeout(() => {
+          window.removeEventListener('click', suppressClick, true)
+          this.hasDragged = false
+        }, 50)
+
+        if (this.swipe) {
+          const swipeThreshold = 50
+          if (this.vertical) {
+            if (Math.abs(deltaY) > swipeThreshold && Math.abs(deltaY) > Math.abs(deltaX)) {
+              if (deltaY < 0) this.verticalNext()
+              else this.verticalPrev()
+            }
+          } else {
+            if (Math.abs(deltaX) > swipeThreshold && Math.abs(deltaX) > Math.abs(deltaY)) {
+              if (deltaX < 0) this.turnRight()
+              else this.turnLeft()
+            }
+          }
+        }
+      }
+    },
+    onClickLeft() {
+      if (this.hasDragged) return
+      this.turnLeft()
+    },
+    onClickRight() {
+      if (this.hasDragged) return
+      this.turnRight()
+    },
+    onClickTop() {
+      if (this.hasDragged) return
+      this.verticalPrev()
+    },
+    onClickBottom() {
+      if (this.hasDragged) return
+      this.verticalNext()
+    },
+    onClickCenter() {
+      if (this.hasDragged) return
+      this.centerClick()
     },
     imgClass(spread: PageDtoWithUrl[]): string {
       const double = spread.length > 1
@@ -277,6 +373,17 @@ export default Vue.extend({
 })
 </script>
 <style scoped>
+.paged-reader {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.paged-reader img {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+}
+
 .full-height {
   height: 100%;
 }

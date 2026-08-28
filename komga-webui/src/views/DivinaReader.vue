@@ -20,6 +20,57 @@
           <v-toolbar-title> {{ bookTitle }}</v-toolbar-title>
           <v-spacer></v-spacer>
 
+          <!--   Navigate to previous book   -->
+          <v-btn
+            icon
+            :disabled="$_.isEmpty(siblingPrevious)"
+            @click="previousBook"
+          >
+            <rtl-icon icon="mdi-chevron-left" rtl="mdi-chevron-right"/>
+          </v-btn>
+
+          <!--   List of all books in context (series/readlist) for navigation   -->
+          <v-menu bottom
+                  offset-y
+                  :max-height="$vuetify.breakpoint.height * .7"
+                  :max-width="250"
+          >
+            <template v-slot:activator="{ on }">
+              <v-btn icon v-on="on">
+                <v-icon>mdi-menu</v-icon>
+              </v-btn>
+            </template>
+
+            <v-list
+              flat
+            >
+              <v-list-item-group color="primary">
+                <v-list-item
+                  v-for="(b, i) in siblings"
+                  :key="i"
+                  :to="{ name: getBookReadRouteFromMedia(b.media), params: { bookId: b.id.toString() }, query: { context: context.origin, contextId: context.id, incognito: incognito.toString()} }"
+                >
+                  <v-list-item-title class="text-wrap text-body-2">
+                    <template v-if="contextReadList && !b.oneshot">{{ b.seriesTitle }} {{ b.metadata.number }}:
+                      {{ b.metadata.title }}
+                    </template>
+                    <template v-else-if="contextReadList && b.oneshot">{{ b.metadata.title }}</template>
+                    <template v-else>{{ b.metadata.number }} - {{ b.metadata.title }}</template>
+                  </v-list-item-title>
+                </v-list-item>
+              </v-list-item-group>
+            </v-list>
+          </v-menu>
+
+          <!--   Navigate to next book   -->
+          <v-btn
+            icon
+            :disabled="$_.isEmpty(siblingNext)"
+            @click="nextBook"
+          >
+            <rtl-icon icon="mdi-chevron-right" rtl="mdi-chevron-left"/>
+          </v-btn>
+
           <v-tooltip bottom v-if="incognito">
             <template v-slot:activator="{ on }">
               <v-icon v-on="on">mdi-incognito</v-icon>
@@ -348,6 +399,9 @@ import jsFileDownloader from 'js-file-downloader'
 import screenfull from 'screenfull'
 import {ItemTypes} from '@/types/items'
 import {getBookReadRouteFromMedia} from '@/functions/book-format'
+import RtlIcon from '@/components/RtlIcon.vue'
+import {BookSearch, SearchConditionSeriesId, SearchOperatorIs} from '@/types/komga-search'
+import {PageRequest} from '@/types/pageable'
 
 export default Vue.extend({
   name: 'DivinaReader',
@@ -358,6 +412,7 @@ export default Vue.extend({
     SettingsSelect,
     ThumbnailExplorerDialog,
     ShortcutHelpDialog,
+    RtlIcon,
   },
   data: function () {
     return {
@@ -369,6 +424,7 @@ export default Vue.extend({
       context: {} as Context,
       contextName: '',
       incognito: false,
+      siblings: [] as BookDto[],
       siblingPrevious: {} as BookDto,
       siblingNext: {} as BookDto,
       jumpToNextBook: false,
@@ -726,6 +782,18 @@ export default Vue.extend({
         this.sendNotificationReadingDirection(false)
       }
 
+      if (this?.context.origin === ContextOrigin.READLIST) {
+        this.$komgaReadLists.getBooks(this.context.id, {unpaged: true} as PageRequest)
+          .then(v => this.siblings = v.content)
+          .catch(() => this.siblings = [])
+      } else {
+        this.$komgaBooks.getBooksList({
+          condition: new SearchConditionSeriesId(new SearchOperatorIs(this.book.seriesId)),
+        } as BookSearch, {unpaged: true, sort: ['metadata.numberSort']})
+          .then(v => this.siblings = v.content)
+          .catch(() => this.siblings = [])
+      }
+
       try {
         if (this?.context.origin === ContextOrigin.READLIST) {
           this.siblingNext = await this.$komgaReadLists.getBookSiblingNext(this.context.id, bookId)
@@ -744,6 +812,9 @@ export default Vue.extend({
       } catch (e) {
         this.siblingPrevious = {} as BookDto
       }
+    },
+    getBookReadRouteFromMedia(media: any) {
+      return getBookReadRouteFromMedia(media)
     },
     getPageUrl(page: PageDto): string {
       if (!this.supportedMediaTypes.includes(page.mediaType)) {
@@ -812,12 +883,17 @@ export default Vue.extend({
       } as Location)
     },
     closeBook() {
-      this.$router.push(
-        {
-          name: this.book.oneshot ? 'browse-oneshot' : 'browse-book',
-          params: {bookId: this.bookId.toString(), seriesId: this.book.seriesId},
-          query: {context: this.context.origin, contextId: this.context.id},
+      if (this?.context.origin === ContextOrigin.READLIST) {
+        this.$router.push({
+          name: 'browse-readlist',
+          params: {readListId: this.context.id},
         })
+      } else {
+        this.$router.push({
+          name: this.book.oneshot ? 'browse-oneshot' : 'browse-series',
+          params: {seriesId: this.book.seriesId},
+        })
+      }
     },
     changeReadingDir(dir: ReadingDirection) {
       this.readingDirection = dir

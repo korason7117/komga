@@ -56,7 +56,7 @@
                 color="accent"
                 style="position: absolute; top: 50%; left: 50%; margin-left: -36px; margin-top: -36px"
                 :to="fabTo"
-                @click.native="$event.stopImmediatePropagation()"
+                @click.native="onFabClick"
               >
                 <v-icon>mdi-book-open-page-variant</v-icon>
               </v-btn>
@@ -178,6 +178,15 @@ import {coverBase64} from '@/types/image'
 import {ReadListDto} from '@/types/komga-readlists'
 import OneShotActionsMenu from '@/components/menus/OneshotActionsMenu.vue'
 import {CLIENT_SETTING} from '@/types/komga-clientsettings'
+import {
+  BookSearch,
+  SearchConditionAllOfBook,
+  SearchConditionReadStatus,
+  SearchConditionSeriesId,
+  SearchOperatorIs,
+  SearchOperatorIsNot,
+} from '@/types/komga-search'
+import {getBookReadRouteFromMedia} from '@/functions/book-format'
 
 export default Vue.extend({
   name: 'ItemCard',
@@ -285,7 +294,7 @@ export default Vue.extend({
       return (this.isUnread || this.allUnread) && this.isBlurUnread
     },
     canReadPages(): boolean {
-      return this.$store.getters.mePageStreaming && this.computedItem.type() === ItemTypes.BOOK
+      return this.$store.getters.mePageStreaming && (this.computedItem.type() === ItemTypes.BOOK || this.computedItem.type() === ItemTypes.SERIES)
     },
     overlay(): boolean {
       return this.onEdit !== undefined || this.onSelected !== undefined || this.showFab || this.actionMenu
@@ -335,6 +344,9 @@ export default Vue.extend({
     bookReady(): boolean {
       if (this.computedItem.type() === ItemTypes.BOOK) {
         return (this.item as BookDto).media.status === 'READY'
+      }
+      if (this.computedItem.type() === ItemTypes.SERIES) {
+        return !(this.item as SeriesDto).deleted && (this.item as SeriesDto).booksCount > 0
       }
       return false
     },
@@ -389,6 +401,39 @@ export default Vue.extend({
     editItem() {
       if (this.onEdit !== undefined) {
         this.onEdit(this.item)
+      }
+    },
+    async onFabClick(e: MouseEvent) {
+      e.stopImmediatePropagation()
+      if (this.computedItem.type() === ItemTypes.SERIES) {
+        await this.readNext()
+      }
+    },
+    async readNext() {
+      const series = this.item as SeriesDto
+      try {
+        let books = await this.$komgaBooks.getBooksList({
+          condition: new SearchConditionAllOfBook([
+            new SearchConditionSeriesId(new SearchOperatorIs(series.id)),
+            new SearchConditionReadStatus(new SearchOperatorIsNot(ReadStatus.READ)),
+          ]),
+        } as BookSearch, {page: 0, size: 1, sort: ['metadata.numberSort']})
+
+        if (!books.content || books.content.length === 0) {
+          books = await this.$komgaBooks.getBooksList({
+            condition: new SearchConditionSeriesId(new SearchOperatorIs(series.id)),
+          } as BookSearch, {page: 0, size: 1, sort: ['metadata.numberSort']})
+        }
+
+        if (books.content && books.content.length > 0) {
+          const book = books.content[0]
+          this.$router.push({
+            name: getBookReadRouteFromMedia(book.media),
+            params: {bookId: book.id.toString()},
+            query: {context: series?.context?.origin, contextId: series?.context?.id},
+          })
+        }
+      } catch (e) {
       }
     },
   },

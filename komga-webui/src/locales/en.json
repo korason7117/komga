@@ -1091,5 +1091,9 @@
     "add_library": "Add library",
     "no_libraries_yet": "No libraries have been added yet!",
     "welcome_message": "Welcome to Komga"
+  },
+  "wrap_clamp": {
+    "less": "Show less",
+    "more": "+{count} more"
   }
 }

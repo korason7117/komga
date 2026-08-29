@@ -310,30 +310,31 @@
       <v-row v-if="series.metadata.genres.length > 0" class="align-center text-caption">
         <v-col cols="4" sm="3" md="2" xl="1" class="py-1 text-uppercase">{{ $t('common.genre') }}</v-col>
         <v-col cols="8" sm="9" md="10" xl="11" class="py-1 text-capitalize">
-          <vue-horizontal>
-            <template v-slot:btn-prev>
-              <v-btn icon small>
-                <v-icon>mdi-chevron-left</v-icon>
-              </v-btn>
+          <wrap-clamp :items="sortedGenres" :max-lines="2">
+            <template v-slot:item="{item: t}">
+              <v-chip
+                class="me-2 mb-1"
+                :title="t"
+                :to="{name:'browse-libraries', params: {libraryId: series.libraryId }, query: {genre: [new SearchConditionGenre(new SearchOperatorIs(t))]}}"
+                label
+                small
+                outlined
+                link
+              >{{ t }}
+              </v-chip>
             </template>
-
-            <template v-slot:btn-next>
-              <v-btn icon small>
-                <v-icon>mdi-chevron-right</v-icon>
-              </v-btn>
+            <template v-slot:after="{clamped, expanded, hiddenItems, toggle}">
+              <v-chip
+                v-if="clamped || expanded"
+                class="mb-1"
+                label
+                small
+                outlined
+                @click="toggle"
+              >{{ expanded ? $t('wrap_clamp.less') : $t('wrap_clamp.more', {count: hiddenItems.length}) }}
+              </v-chip>
             </template>
-            <v-chip v-for="(t, i) in $_.sortBy(series.metadata.genres)"
-                    :key="i"
-                    class="me-2"
-                    :title="t"
-                    :to="{name:'browse-libraries', params: {libraryId: series.libraryId }, query: {genre: [new SearchConditionGenre(new SearchOperatorIs(t))]}}"
-                    label
-                    small
-                    outlined
-                    link
-            >{{ t }}
-            </v-chip>
-          </vue-horizontal>
+          </wrap-clamp>
         </v-col>
       </v-row>
 
@@ -342,42 +343,32 @@
              class="align-center text-caption">
         <v-col cols="4" sm="3" md="2" xl="1" class="py-1 text-uppercase">{{ $t('common.tags') }}</v-col>
         <v-col cols="8" sm="9" md="10" xl="11" class="py-1 text-capitalize">
-          <vue-horizontal>
-            <template v-slot:btn-prev>
-              <v-btn icon small>
-                <v-icon>mdi-chevron-left</v-icon>
-              </v-btn>
+          <wrap-clamp :items="combinedTags" item-key="text" :max-lines="2">
+            <template v-slot:item="{item}">
+              <v-chip
+                class="me-2 mb-1"
+                :title="item.text"
+                :to="{name:'browse-libraries', params: {libraryId: series.libraryId }, query: {tag: [new SearchConditionTag(new SearchOperatorIs(item.text))]}}"
+                label
+                small
+                outlined
+                link
+                :color="item.fromBook ? 'contrast-light-2' : undefined"
+              >{{ item.text }}
+              </v-chip>
             </template>
-
-            <template v-slot:btn-next>
-              <v-btn icon small>
-                <v-icon>mdi-chevron-right</v-icon>
-              </v-btn>
+            <template v-slot:after="{clamped, expanded, hiddenItems, toggle}">
+              <v-chip
+                v-if="clamped || expanded"
+                class="mb-1"
+                label
+                small
+                outlined
+                @click="toggle"
+              >{{ expanded ? $t('wrap_clamp.less') : $t('wrap_clamp.more', {count: hiddenItems.length}) }}
+              </v-chip>
             </template>
-            <v-chip v-for="(t, i) in $_.sortBy(series.metadata.tags)"
-                    :key="`series_${i}`"
-                    class="me-2"
-                    :title="t"
-                    :to="{name:'browse-libraries', params: {libraryId: series.libraryId }, query: {tag: [new SearchConditionTag(new SearchOperatorIs(t))]}}"
-                    label
-                    small
-                    outlined
-                    link
-            >{{ t }}
-            </v-chip>
-            <v-chip v-for="(t, i) in $_(series.booksMetadata.tags).difference(series.metadata.tags).sortBy()"
-                    :key="`book_${i}`"
-                    class="me-2"
-                    :title="t"
-                    :to="{name:'browse-libraries', params: {libraryId: series.libraryId }, query: {tag: [new SearchConditionTag(new SearchOperatorIs(t))]}}"
-                    label
-                    small
-                    outlined
-                    link
-                    color="contrast-light-2"
-            >{{ t }}
-            </v-chip>
-          </vue-horizontal>
+          </wrap-clamp>
         </v-col>
       </v-row>
 
@@ -415,31 +406,31 @@
       >
         <v-col cols="4" sm="3" md="2" xl="1" class="py-1 text-uppercase">{{ $t(`author_roles.${role}`) }}</v-col>
         <v-col cols="8" sm="9" md="10" xl="11" class="py-1">
-          <vue-horizontal>
-            <template v-slot:btn-prev>
-              <v-btn icon small>
-                <v-icon>mdi-chevron-left</v-icon>
-              </v-btn>
+          <wrap-clamp :items="authorsByRole[role].sort()" :max-lines="2">
+            <template v-slot:item="{item: name}">
+              <v-chip
+                class="me-2 mb-1"
+                :title="name"
+                :to="{name:'browse-libraries', params: {libraryId: series.libraryId }, query: {[role]: [name]}}"
+                label
+                small
+                outlined
+                link
+              >{{ name }}
+              </v-chip>
             </template>
-
-            <template v-slot:btn-next>
-              <v-btn icon small>
-                <v-icon>mdi-chevron-right</v-icon>
-              </v-btn>
+            <template v-slot:after="{clamped, expanded, hiddenItems, toggle}">
+              <v-chip
+                v-if="clamped || expanded"
+                class="mb-1"
+                label
+                small
+                outlined
+                @click="toggle"
+              >{{ expanded ? $t('wrap_clamp.less') : $t('wrap_clamp.more', {count: hiddenItems.length}) }}
+              </v-chip>
             </template>
-
-            <v-chip v-for="(name, i) in authorsByRole[role].sort()"
-                    :key="i"
-                    class="me-2"
-                    :title="name"
-                    :to="{name:'browse-libraries', params: {libraryId: series.libraryId }, query: {[role]: [name]}}"
-                    label
-                    small
-                    outlined
-                    link
-            >{{ name }}
-            </v-chip>
-          </vue-horizontal>
+          </wrap-clamp>
         </v-col>
       </v-row>
 
@@ -543,7 +534,7 @@ import {SeriesDto} from '@/types/komga-series'
 import {groupAuthorsByRole} from '@/functions/authors'
 import ReadMore from '@/components/ReadMore.vue'
 import {authorRoles, authorRolesSeries} from '@/types/author-roles'
-import VueHorizontal from 'vue-horizontal'
+import WrapClamp from '@/components/WrapClamp.vue'
 import RtlIcon from '@/components/RtlIcon.vue'
 import {throttle} from 'lodash'
 import {BookSseDto, CollectionSseDto, LibrarySseDto, ReadProgressSseDto, SeriesSseDto} from '@/types/komga-sse'
@@ -602,7 +593,7 @@ export default Vue.extend({
     FilterPanels,
     SortList,
     ReadMore,
-    VueHorizontal,
+    WrapClamp,
     RtlIcon,
   },
   data: function () {
@@ -784,6 +775,19 @@ export default Vue.extend({
     },
     displayedRoles(): string[] {
       return authorRolesSeries.filter(x => this.authorsByRole[x])
+    },
+    sortedGenres(): string[] {
+      return this.$_.sortBy(this.series.metadata.genres)
+    },
+    combinedTags(): { text: string, fromBook: boolean }[] {
+      const seriesTags = this.$_.sortBy(this.series.metadata.tags)
+        .map((t: string) => ({text: t, fromBook: false}))
+      const bookOnlyTags = this.$_(this.series.booksMetadata.tags)
+        .difference(this.series.metadata.tags)
+        .sortBy()
+        .value()
+        .map((t: string) => ({text: t, fromBook: true}))
+      return [...seriesTags, ...bookOnlyTags]
     },
     contextCollection(): boolean {
       return this.context.origin === ContextOrigin.COLLECTION

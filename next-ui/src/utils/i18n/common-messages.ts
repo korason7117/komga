@@ -92,11 +92,6 @@ export const commonMessages = {
     defaultMessage: 'Library',
     id: 'phzvRy',
   }),
-  filterPanelCollection: defineMessage({
-    description: 'Filter panel: Collection',
-    defaultMessage: 'Collection',
-    id: 'eyR9uF',
-  }),
   filterPanelGenre: defineMessage({
     description: 'Filter panel: Genre',
     defaultMessage: 'Genre',

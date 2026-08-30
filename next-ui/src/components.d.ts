@@ -47,7 +47,6 @@ declare module 'vue' {
     FilterButton: typeof import('./components/filter/FilterButton.vue')['default']
     FilterByAgeRating: typeof import('./components/filter/by/AgeRating.vue')['default']
     FilterByAuthor: typeof import('./components/filter/by/Author.vue')['default']
-    FilterByCollection: typeof import('./components/filter/by/Collection.vue')['default']
     FilterByComplete: typeof import('./components/filter/by/Complete.vue')['default']
     FilterByGenre: typeof import('./components/filter/by/Genre.vue')['default']
     FilterByLanguage: typeof import('./components/filter/by/Language.vue')['default']

@@ -98,7 +98,6 @@ const supportedFilters = {
   read: SchemaFilterReadStatus,
   genre: SchemaFilterStrings,
   library: SchemaFilterStrings,
-  collection: SchemaFilterStrings,
   tag: SchemaFilterStrings,
   publisher: SchemaFilterStrings,
   sharingLabel: SchemaFilterStrings,

@@ -35,7 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Setup Java 21
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           java-version: 21
           java-package: 'jdk'
@@ -70,7 +70,7 @@ jobs:
 
       - name: Conveyor - compute JDK module list
         if: github.event_name == 'push' && github.repository_owner == 'gotson' && contains(matrix.os, 'ubuntu')
-        uses: hydraulic-software/conveyor/actions/build@v22.1
+        uses: hydraulic-software/conveyor/actions/build@v22.2
         with:
           command: -f conveyor.detect.conf -Kapp.machines=mac.aarch64 make processed-jars
           signing_key: ${{ secrets.CONVEYOR_SIGNING_KEY }}

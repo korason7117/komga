@@ -70,6 +70,7 @@ jreleaser {
     github {
       skipTag = true
       tagName = "{{projectVersion}}"
+      immutableRelease = true
 
       changelog {
         formatted = Active.ALWAYS

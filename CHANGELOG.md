@@ -1,3 +1,43 @@
+# [1.11.1](https://github.com/korason7117/komga/compare/1.11.0...1.11.1) (2026-09-23)
+## 🐛 Fixes
+**api**
+- add missing restrictions checks ([7f71808](https://github.com/korason7117/komga/commits/7f71808))
+
+**kobo**
+- allow proxy requests without raw sync token ([c21dbad](https://github.com/korason7117/komga/commits/c21dbad))
+- prevent Kobo from re-downloading books if the metadata changed ([725443d](https://github.com/korason7117/komga/commits/725443d)), closes [#2426](https://github.com/korason7117/komga/issues/2426)
+
+**nextui**
+- better justify poster on entity view page ([e7e08ca](https://github.com/korason7117/komga/commits/e7e08ca)), closes [#2454](https://github.com/korason7117/komga/issues/2454)
+- wrap long names in import book table ([4afa57e](https://github.com/korason7117/komga/commits/4afa57e))
+- properly close menus on click ([3161c48](https://github.com/korason7117/komga/commits/3161c48))
+- display file format in book view ([0523038](https://github.com/korason7117/komga/commits/0523038))
+- display sharing labels in Book and Series view ([7719362](https://github.com/korason7117/komga/commits/7719362))
+- edit sharing labels for oneshots ([4bde978](https://github.com/korason7117/komga/commits/4bde978))
+- hide number fields and show title sort field when editing one shot ([fe1e072](https://github.com/korason7117/komga/commits/fe1e072))
+
+## 🔄️ Changes
+**komga**
+- use SearchContext instead of ContentRestrictions in repository ([939e6a4](https://github.com/korason7117/komga/commits/939e6a4))
+
+## 🛠  Build
+
+- enable immutable github releases with jreleaser ([8e63b43](https://github.com/korason7117/komga/commits/8e63b43))
+
+## 🌐 Translation
+**komga-tray**
+- translated using Weblate (Korean) ([f9dad02](https://github.com/korason7117/komga/commits/f9dad02))
+
+**nextui**
+- extract strings ([26de450](https://github.com/korason7117/komga/commits/26de450))
+
+**webui**
+- translated using Weblate (Korean) ([dc46165](https://github.com/korason7117/komga/commits/dc46165))
+
+## ⚙️ Dependencies
+**ci**
+- bump hydraulic-software/conveyor from 22.2 to 22.3 ([c7d353a](https://github.com/korason7117/komga/commits/c7d353a))
+
 # [1.27.1](https://github.com/gotson/komga/compare/1.27.0...1.27.1) (2026-09-22)
 ## 🐛 Fixes
 **api**
